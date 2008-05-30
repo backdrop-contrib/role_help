@@ -1,0 +1,38 @@
+<?php
+// $Id$
+
+/**
+ * Implementation of hook_install().
+ * Create table.
+ * Display a welcome message with link to get started.
+ */
+function role_help_install() {
+  switch ($GLOBALS['db_type']) {
+    case 'mysql':
+    case 'mysqli':
+      db_query("CREATE TABLE {role_help} (
+        rid int unsigned NOT NULL default '0',
+        description longtext NOT NULL default '',
+        PRIMARY KEY (rid)
+      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
+      break;
+
+    case 'pgsql':
+      db_query("CREATE TABLE {role_help} (
+        rid int_unsigned NOT NULL default '0',
+        description longtext NOT NULL default '',
+        PRIMARY KEY (rid)      
+      )");
+      break;
+  }  
+  drupal_set_message(t('Role Help has been installed.'));
+}
+
+/**
+ * Implementation of hook_uninstall().
+ * Drop the table.
+ */
+function role_help_uninstall() {
+  db_query('DROP TABLE {role_help}');
+}
+

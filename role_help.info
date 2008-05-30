@@ -1,0 +1,3 @@
+; $Id$
+name = Role Help
+description = "Displays information about roles, tailored for each user."
