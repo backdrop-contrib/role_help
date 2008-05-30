@@ -106,12 +106,12 @@ function role_help_user_admin_role_form_submit($form_id, $form_values) {
   if ($form_values['op'] == t('Save role')) {
     if ($form_values['role_help'] != '') {
       // text set: update or insert an entry
-      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $form_values['rid']['#value']);
+      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $form_values['rid']);
       if (db_num_rows($result)) {
         db_query("UPDATE {role_help} SET description = '%s' WHERE rid = %d", $form_values['role_help'], $form_values['rid']);
       }
       else {
-        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $form_values['rid']['#value'], $form_values['role_help']);    
+        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $form_values['rid'], $form_values['role_help']);    
       }         
       drupal_set_message(t('The role help text has been saved.'));
     }
