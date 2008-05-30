@@ -25,19 +25,19 @@ function role_help_help($section='') {
     // main help page
     case "admin/help#role_help":
       $output = '<p>'.  t("The Role Help module displays a help page that is tailored to a user, showing information for each role they have assigned to them. This is visible to anonymous users only if a description is set for that role.") .'</p>';
-      $output .= '<p>'. t("Set description text for a role on its settings pages. You can also set an input format for all role help texts here.") .'</p>';
+      $output .= '<p>'. t("Set description text for a role on its settings pages.") .'</p>';
       $output .= t('<p>You can</p>
 <ul>
 <li>set a description for each role on its <a href="@admin-roles-page">settings page</a>.</li>
-<li>set descriptions for the anonymous and authenticated roles on the <a href="@admin-role-help-page">role description page</a>.</li>
-</ul>',
+<li>set descriptions for the anonymous and authenticated roles on the <a href="@admin-role-help-page">role help settings page</a>.</li>
+<li>set the input format for all role help text on the <a href="@admin-role-help-page">role help settings page</a>.</li></ul>',
         array(
           '@admin-roles-page' => url('admin/user/roles'),
           '@admin-role-help-page' => url('admin/user/role_help'),
         )) .'';
       return $output;
     case "admin/user/role_help":
-      $output = '<p>Set descriptions for the anonymous user and authenticated user roles here. Descriptions for other roles are set on each role\'s settings page.</p>';
+      $output = '<p>Set descriptions for the anonymous user and authenticated user roles here. Descriptions for other roles are set on each role\'s settings page. You can also set an input format for all role help texts here.</p>';
       return $output;
       
   }
