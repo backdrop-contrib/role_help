@@ -1,5 +1,20 @@
 <?php
 // $Id$
+/* TODO Remove db_num_rows() method
+   The db_num_rows() method was removed from the database abstraction layer in
+   6.x core, as it was a database dependent method. Developers need to use other
+   handling to replace the needs of this method. */
+
+/* TODO Form buttons can define custom #submit and #validate handlers.
+   All forms can have #validate and #submit properties containing lists of
+   validation and submission handlers to be executed when a user submits data.
+   Previously, if a form featured multiple submission buttons to initiate
+   different actions (updating a record versus deleting, for example), it was
+   necessary to check the incoming form_values['op'] for the name of the
+   clicked button, then execute different code based on its value. Now, it is
+   possible to define #validate and #submit properties on each individual form
+   button if desired. */
+
 // role_help
 
 /**
@@ -18,10 +33,10 @@
 /**
  * Implementation of hook_help().
  */
-function role_help_help($section='') {
+function role_help_help($path='', $arg) {
   $output = '';
 
-  switch ($section) {
+  switch ($path) {
     // main help page
     case "admin/help#role_help":
       $output = '<p>'.  t("The Role Help module displays a help page that is tailored to a user, showing information for each role they have assigned to them. This is visible to anonymous users only if a description is set for that role.") .'</p>';
@@ -43,86 +58,103 @@ function role_help_help($section='') {
   }
 } // function role_help_help
 
+/**
+* Implementation of hook_menu().
+*/
+function role_help_menu() {
+  $items['help/roles'] = array(
+    'title' => 'Site help',
+    'page callback' => 'role_help_page',
+    'access callback' => '_role_help_menu_access',
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 1,
+  );
+  $items['admin/user/role_help'] = array(
+    'title' => 'Role help settings',
+    'description' => 'Set the input format and role help text for anonymous and authorized roles.',      
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('role_help_admin_settings'),
+    'access arguments' => array('administer access control'),
+    'type' => MENU_NORMAL_ITEM,
+    'weight' => 1,
+  );
+  
+  return $items;
+}
 
 /**
- * Implementation of hook_menu().
+ * Helper function for access to the role help page.
  */
-function role_help_menu($may_cache) {
+function _role_help_menu_access() {
   global $user;
   
   // anonymous users have access if there is a description for that role
   $anon_access = db_result(db_query('SELECT description FROM {role_help} WHERE rid = 1')) ? 1 : 0;
-
-  if ($may_cache) {
-    $items[] = array(
-      'path' => 'help/roles',
-      'title' => t('Site help'),
-      'access' => $user->uid || $anon_access,
-      'callback' => 'role_help_page',
-      'type' => MENU_NORMAL_ITEM,      
-    );
-    $items[] = array(
-      'path' => 'admin/user/role_help',
-      'title' => t('Role help settings'),
-      'description' => t('Set the input format and role help text for anonymous and authorized roles.'),      
-      'access' => user_access('administer access control'),
-      'callback' => 'drupal_get_form',
-      'callback arguments' => array('role_help_admin_settings'),
-      'type' => MENU_NORMAL_ITEM,      
-    );
-  }
-  return $items;
-} // function role_help_menu
-
+  $anon_access = db_result(db_query('SELECT description FROM {role_help} WHERE rid = 1'));
+  
+  #dsm($anon_access);
+  
+  return $user->uid || $anon_access;
+}
 
 /**
- * Implementation of hook_form_alter().
+ * Implementation of hook_form_FORM_ID_alter().
  */
-function role_help_form_alter($form_id, &$form) {
-  if ('user_admin_role' == $form_id) {
-    // role edit form
-    // add a text area for the role's help text
-    $result = db_query('SELECT description FROM {role_help} WHERE rid = %d', $form['rid']['#value']);
-    $description = db_result($result);
+function role_help_form_user_admin_role_alter(&$form, &$form_state) {
+  // role edit form
+  // add a text area for the role's help text
+  $result = db_query('SELECT description FROM {role_help} WHERE rid = %d', $form['rid']['#value']);
+  $description = db_result($result);
 
-    $form['role_help'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Help text'),
-      '#default_value' => $description,
-      '#description' => t('A description of what a user with this role can accomplish. This will be shown to users on the site help page.'),
-      '#weight' => -5,
-    ); 
-    $form['name']['#weight'] = -10;
-    $form['#submit']['role_help_user_admin_role_form_submit'] = array();   
-  }
-} // function role_help_form_alter
+  $form['role_help'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Help text'),
+    '#default_value' => $description,
+    '#description' => t('A description of what a user with this role can accomplish. This will be shown to users on the site help page.'),
+    '#weight' => -5,
+  ); 
+  $form['name']['#weight'] = -10;
+  $form['#submit'][] = 'role_help_user_admin_role_form_submit';   
+} // function role_help_form_user_admin_role_alter
 
 
 /**
  * Custom submit function for user_admin_role form
  * submit form: save or update text, delete with role
  */
-function role_help_user_admin_role_form_submit($form_id, $form_values) {
-  if ($form_values['op'] == t('Save role')) {
-    if ($form_values['role_help'] != '') {
+function role_help_user_admin_role_form_submit($form, &$form_state) {
+/* TODO The 'op' element in the form values is deprecated.
+   Each button can have #validate and #submit functions associated with it.
+   Thus, there should be one button that submits the form and which invokes
+   the normal form_id_validate and form_id_submit handlers. Any additional
+   buttons which need to invoke different validate or submit functionality
+   should have button-specific functions. */
+  if ($form_state['values']['op'] == t('Save role')) {
+    if ($form_state['values']['role_help'] != '') {
       // text set: update or insert an entry
-      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $form_values['rid']);
-      if (db_num_rows($result)) {
-        db_query("UPDATE {role_help} SET description = '%s' WHERE rid = %d", $form_values['role_help'], $form_values['rid']);
+      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $form_state['values']['rid']);
+      if ($num_rows) {
+        db_query("UPDATE {role_help} SET description = '%s' WHERE rid = %d", $form_state['values']['role_help'], $form_state['values']['rid']);
       }
       else {
-        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $form_values['rid'], $form_values['role_help']);    
+        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $form_state['values']['rid'], $form_state['values']['role_help']);    
       }         
       drupal_set_message(t('The role help text has been saved.'));
     }
     else {
       // text blanked: delete entry
-      db_query('DELETE FROM {role_help} WHERE rid = %d', $form_values['rid']);    
+      db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);    
     }
   } 
-  else if ($form_values['op'] == t('Delete role')) {
+/* TODO The 'op' element in the form values is deprecated.
+   Each button can have #validate and #submit functions associated with it.
+   Thus, there should be one button that submits the form and which invokes
+   the normal form_id_validate and form_id_submit handlers. Any additional
+   buttons which need to invoke different validate or submit functionality
+   should have button-specific functions. */
+  else if ($form_state['values']['op'] == t('Delete role')) {
     // role deleted: delete entry
-    db_query('DELETE FROM {role_help} WHERE rid = %d', $form_values['rid']);
+    db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
   }
 } // function role_help_user_admin_role_form_submit
 
@@ -136,7 +168,7 @@ function role_help_admin_settings() {
   while ($item = db_fetch_array($result)) {
     $descriptions[$item['rid']] = $item['description'];
   }
-  $form['#submit'] = array('role_help_admin_settings_submit' => array());
+  #$form['#submit'] = array('role_help_admin_settings_submit' => array());
 
   $form['anonymous_help'] = array(
       '#type' => 'textarea',
@@ -167,24 +199,13 @@ function role_help_admin_settings() {
  * Submit function for admin settings form
  * submit form: save or update text, delete if blanked
  */
-function role_help_admin_settings_submit($form_id, &$form_values) {
-  variable_set('role_help_format', $form_values['format']);
+function role_help_admin_settings_submit($form, &$form_state) {
+  variable_set('role_help_format', $form_state['values']['format']);
 
   foreach (array(1 => 'anonymous_help', 2 => 'authenticated_help') as $rid => $role) {
-    if ($form_values[$role] != '') {
-      #dsm($form_values[$role]);
-      
-      // update or insert into role_help table
-      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $rid);
-      if (db_num_rows($result)) {
-        db_query("UPDATE {role_help} SET description = '%s' WHERE rid = %d", $form_values[$role], $rid);
-      }
-      else {
-        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $rid, $form_values[$role]);    
-      }         
-    }
-    else {
-      db_query('DELETE FROM {role_help} WHERE rid = %d', $rid);    
+    db_query('DELETE FROM {role_help} WHERE rid = %d', $rid);    
+    if ($form_state['values'][$role] != '') {
+      db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);    
     }
   }
   // clear cache so anon users either gain or lose the site help menu item
@@ -201,7 +222,7 @@ function role_help_admin_settings_submit($form_id, &$form_values) {
  */
 function role_help_page() {
 
-  if (user_access('administer access control')) {
+  if (user_access('administer permissions')) {
     $header = t('You are an access control administrator. All roles with help text are listed below:');
   
     $result = db_query("SELECT name, description FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid");    
@@ -214,23 +235,40 @@ function role_help_page() {
     $placeholders = implode(',', array_fill(0, count($user_rids), '%d'));
     $result = db_query("SELECT name, description FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) ORDER BY r.rid", $user_rids );  
   }
+  /*
+  # TODO
   if (db_num_rows($result) == 0) {
     $header = t('No role help text has been set.');
   }
+  */
   $output .= "<p>$header</p>";
   
   while ($item = db_fetch_array($result)) {
-    $output .= theme('role_help', $item['name'], $item['description']);
+    $output .= theme('role_help_section', $item['name'], $item['description']);
   }
   
   return $output;
 } // function role_help_page
 
+/**
+ * Implementation of hook_theme().
+ */
+function role_help_theme() {
+  return array(
+    'role_help_section' => array(
+      'file' => 'role_help.module',
+      'arguments' => array(
+        'name' => NULL,
+        'description' => NULL,
+      ),
+    ),
+  );
+}
 
 /**
  * Theme a role help section
  */
-function theme_role_help($name, $description) {
+function theme_role_help_section($name, $description) {
   $output .= '<h3>'. ucfirst($name) .'</h3>';
   $output .= '<div>'. check_markup($description, variable_get('role_help_format', FILTER_FORMAT_DEFAULT), FALSE) .'</div>';
   return $output;

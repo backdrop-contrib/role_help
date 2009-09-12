@@ -2,30 +2,47 @@
 // $Id$
 
 /**
+ * @file
+ * Install, update and uninstall functions for the Role Help module.
+ */
+
+/**
+ * Implementation of hook_schema().
+ */
+function role_help_schema() {
+  $schema['role_help'] = array(
+    'description' => 'Stores descriptions for roles.',
+    'fields' => array(
+      'rid' => array(
+        'description' => 'The {role}.rid.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+      'description' => array(
+        'description' => 'Description text for the role.',
+        'type' => 'text',
+        'size' => 'big',
+        'not null' => TRUE,
+        'default' => '',
+      ),
+    ),
+    'primary key' => array('rid'),
+  );
+
+  return $schema;
+}
+
+/**
  * Implementation of hook_install().
  * Create table.
  * Display a welcome message with link to get started.
  */
 function role_help_install() {
-  switch ($GLOBALS['db_type']) {
-    case 'mysql':
-    case 'mysqli':
-      db_query("CREATE TABLE {role_help} (
-        rid int unsigned NOT NULL default '0',
-        description longtext NOT NULL default '',
-        PRIMARY KEY (rid)
-      ) /*!40100 DEFAULT CHARACTER SET UTF8 */ ");
-      break;
-
-    case 'pgsql':
-      db_query("CREATE TABLE {role_help} (
-        rid int_unsigned NOT NULL default '0',
-        description longtext NOT NULL default '',
-        PRIMARY KEY (rid)      
-      )");
-      break;
-  }  
-  drupal_set_message(t('Role Help has been installed.'));
+  // Create tables.
+  drupal_install_schema('role_help');
+  drupal_set_message(t('Role Help has been installed. You can add descriptions to a role when you edit it.'));
 }
 
 /**
@@ -33,6 +50,8 @@ function role_help_install() {
  * Drop the table.
  */
 function role_help_uninstall() {
-  db_query('DROP TABLE {role_help}');
+  // Remove tables.
+  drupal_uninstall_schema('role_help');
+
 }
 
