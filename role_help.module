@@ -1,5 +1,4 @@
 <?php
-// $Id$
 /* TODO Remove db_num_rows() method
    The db_num_rows() method was removed from the database abstraction layer in
    6.x core, as it was a database dependent method. Developers need to use other
