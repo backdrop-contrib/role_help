@@ -1,9 +1,4 @@
 <?php
-/* TODO Remove db_num_rows() method
-   The db_num_rows() method was removed from the database abstraction layer in
-   6.x core, as it was a database dependent method. Developers need to use other
-   handling to replace the needs of this method. */
-
 /* TODO Form buttons can define custom #submit and #validate handlers.
    All forms can have #validate and #submit properties containing lists of
    validation and submission handlers to be executed when a user submits data.
@@ -232,17 +227,17 @@ function role_help_page() {
     $placeholders = implode(',', array_fill(0, count($user_rids), '%d'));
     $result = db_query("SELECT name, description FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) ORDER BY r.rid", $user_rids );
   }
-  /*
-  # TODO
-  if (db_num_rows($result) == 0) {
+
+  $role_help_items = array();
+  while ($item = db_fetch_array($result)) {
+    $role_help_items[] = theme('role_help_section', $item['name'], $item['description']);
+  }
+  if (!count($role_help_items)) {
     $header = t('No role help text has been set.');
   }
-  */
-  $output .= "<p>$header</p>";
 
-  while ($item = db_fetch_array($result)) {
-    $output .= theme('role_help_section', $item['name'], $item['description']);
-  }
+  $output = "<p>$header</p>";
+  $output .= theme('item_list', $role_help_items);
 
   return $output;
 }
