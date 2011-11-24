@@ -18,12 +18,18 @@ function role_help_schema() {
         'not null' => TRUE,
         'default' => 0,
       ),
-      'description' => array(
+      'help' => array(
         'description' => 'Description text for the role.',
         'type' => 'text',
         'size' => 'big',
-        'not null' => TRUE,
+        'not null' => FALSE,
         'default' => '',
+      ),
+      'summary' => array(
+        'type' => 'varchar',
+        'length' => '255',
+        'not null' => FALSE,
+        'description' => 'Summary details about a role.',
       ),
     ),
     'primary key' => array('rid'),
@@ -54,3 +60,25 @@ function role_help_uninstall() {
   drupal_uninstall_schema('role_help');
 }
 
+/**
+ * Add the summary field and change the description field.
+ */
+function role_help_update_6001(&$sandbox) {
+  $ret = array();
+  // Rename the 'description' field to 'help' and allow it to be NULL.
+  db_change_field($ret, 'role_help', 'description', 'help', array(
+    'description' => 'Description text for the role.',
+    'type' => 'text',
+    'size' => 'big',
+    'not null' => FALSE, // Changed.
+    'default' => '',
+  ));
+  // Add the summary field.
+  db_add_field($ret, 'role_help', 'summary', array(
+    'type' => 'varchar',
+    'length' => '255',
+    'not null' => FALSE,
+    'description' => 'Summary details about a role.',
+  ));
+  return $ret;
+}

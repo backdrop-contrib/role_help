@@ -25,7 +25,8 @@ function role_help_help($path='', $arg) {
       $output .= '<p>'. t("Set description text for a role on its settings pages.") .'</p>';
       $output .= t('<p>You can</p>
 <ul>
-<li>set a description for each role on its <a href="@admin-roles-page">settings page</a>.</li>
+<li>set a summary and description for each role on its <a href="@admin-roles-page">settings page</a>.</li>
+<li>show the summary on the <a href="@admin-roles-page">roles list</a>, and user profile edit pages.</li>
 <li>set descriptions for the anonymous and authenticated roles on the <a href="@admin-role-help-page">role help settings page</a>.</li>
 <li>set the input format for all role help text on the <a href="@admin-role-help-page">role help settings page</a>.</li></ul>',
         array(
@@ -83,8 +84,8 @@ function _role_help_menu_access() {
   global $user;
 
   // Anonymous users have access if there is a description for that role.
-  $anon_access = db_result(db_query('SELECT description FROM {role_help} WHERE rid = 1')) ? 1 : 0;
-  $anon_access = db_result(db_query('SELECT description FROM {role_help} WHERE rid = 1'));
+  $anon_access = db_result(db_query('SELECT help FROM {role_help} WHERE rid = 1')) ? 1 : 0;
+  $anon_access = db_result(db_query('SELECT help FROM {role_help} WHERE rid = 1'));
 
   #dsm($anon_access);
 
@@ -96,15 +97,32 @@ function _role_help_menu_access() {
  */
 function role_help_form_user_admin_role_alter(&$form, &$form_state) {
   // Role edit form: add a text area for the role's help text.
-  $result = db_query('SELECT description FROM {role_help} WHERE rid = %d', $form['rid']['#value']);
-  $description = db_result($result);
+  if (isset($form['rid']['#value'])) {
+    $role_help = db_fetch_object(db_query('SELECT * FROM {role_help} WHERE rid = %d', $form['rid']['#value']));
+  }
 
   $form['role_help'] = array(
+    '#tree' => TRUE,
+    '#weight' => -5,
+  );
+  // Store a hidden value so we know whether to update or insert.
+  $form['role_help']['exists'] = array(
+    '#type' => 'value',
+    '#value' => !empty($role_help),
+  );
+  $form['role_help']['summary'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Summary'),
+    '#size' => 80,
+    '#maxlength' => 255,
+    '#default_value' => isset($role_help->summary) ? $role_help->summary : '',
+    '#description' => t('Summary of what permissions are assigned to this role, and how the role is used.  This will be shown on the role list and user profile edit pages.'),
+  );
+  $form['role_help']['help'] = array(
     '#type' => 'textarea',
     '#title' => t('Help text'),
-    '#default_value' => $description,
-    '#description' => t('A description of what a user with this role can accomplish. This will be shown to users on the site help page.'),
-    '#weight' => -5,
+    '#default_value' => isset($role_help->help) ? $role_help->help : '',
+    '#description' => t('A more detailed description of what a user with this role can accomplish. This will be shown to users on the site help page.'),
   );
   $form['name']['#weight'] = -10;
   $form['#submit'][] = 'role_help_user_admin_role_form_submit';
@@ -121,25 +139,61 @@ function role_help_user_admin_role_form_submit($form, &$form_state) {
   // However, core's user_admin_role_submit() is making use of this too
   // so eh.
   if ($form_state['values']['op'] == t('Save role')) {
-    if ($form_state['values']['role_help'] != '') {
-      // text set: update or insert an entry
-      $result = db_query("SELECT description from {role_help} WHERE rid = %d", $form_state['values']['rid']);
-      if ($num_rows) {
-        db_query("UPDATE {role_help} SET description = '%s' WHERE rid = %d", $form_state['values']['role_help'], $form_state['values']['rid']);
-      }
-      else {
-        db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $form_state['values']['rid'], $form_state['values']['role_help']);
-      }
-      drupal_set_message(t('The role help text has been saved.'));
+    $role_help = $form_state['values']['role_help'];
+    $role_help['rid'] = $form_state['values']['rid'];
+    if ($role_help['exists']) {
+      drupal_write_record('role_help', $role_help, 'rid');
     }
     else {
-      // text blanked: delete entry
-      db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
+      drupal_write_record('role_help', $role_help);
     }
+    drupal_set_message(t('The role help text has been saved.'));
   }
   else if ($form_state['values']['op'] == t('Delete role')) {
-    // role deleted: delete entry
+    // Role deleted: delete our entry.
     db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
+  }
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter(): user_admin_new_role.
+ */
+function role_help_form_user_admin_new_role_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'role_help_user_admin_new_role_form_submit';
+}
+
+/**
+ * Custom submit function for user_admin_new_role form.
+ *
+ * Redirect the user to the detailed role edit page.
+ */
+function role_help_user_admin_new_role_form_submit($form, &$form_state) {
+  $rid = db_last_insert_id('role', 'rid');
+  // Prompt for edit of summary, description after quick add.
+  if ($rid) {
+    drupal_set_message(t('Please edit the role summary and help text.'));
+    $form_state['redirect'] = 'admin/user/roles/edit/' . $rid;
+  }
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter(): user_profile_form.
+ *
+ * Add role summaries to the user account edit form role checkboxes.
+ */
+function role_help_form_user_profile_form_alter(&$form, &$form_state) {
+  if (isset($form['account']['roles'])) {
+    $query = db_query("SELECT rid, summary FROM {role_help}");
+    $summary = array();
+    while ($data = db_fetch_object($query)) {
+      $summary[$data->rid] = $data->summary;
+    }
+    // Add role summary to form #options.
+    foreach ($form['account']['roles']['#options'] as $rid => $name) {
+      if (isset($summary[$rid])) {
+        $form['account']['roles']['#options'][$rid] .= ' (' . theme('placeholder', $summary[$rid]) . ')';
+      }
+    }
   }
 }
 
@@ -149,9 +203,9 @@ function role_help_user_admin_role_form_submit($form, &$form_state) {
  * Set the description for the anonymous and authorized users here.
  */
 function role_help_admin_settings() {
-  $result = db_query('SELECT rid, description FROM {role_help} WHERE rid IN (%d, %d)', 1, 2);
+  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (%d, %d)', 1, 2);
   while ($item = db_fetch_array($result)) {
-    $descriptions[$item['rid']] = $item['description'];
+    $descriptions[$item['rid']] = $item['help'];
   }
   #$form['#submit'] = array('role_help_admin_settings_submit' => array());
 
@@ -190,7 +244,7 @@ function role_help_admin_settings_submit($form, &$form_state) {
   foreach (array(1 => 'anonymous_help', 2 => 'authenticated_help') as $rid => $role) {
     db_query('DELETE FROM {role_help} WHERE rid = %d', $rid);
     if ($form_state['values'][$role] != '') {
-      db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);
+      db_query("INSERT INTO {role_help} (rid, help) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);
     }
   }
   // Rebuild menus so anon users either gain or lose the site help menu item.
@@ -208,7 +262,8 @@ function role_help_page() {
   if (user_access('administer permissions')) {
     $header = t('You are an access control administrator. All roles with help text are listed below:');
 
-    $result = db_query("SELECT name, description FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid");
+    // The h.help <> '' WHERE clause filters out both NULL and empty text.
+    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE h.help <> ''");
   }
   else {
     $header = t('Your user account is enabled to do the following on this site:');
@@ -216,12 +271,12 @@ function role_help_page() {
     global $user;
     $user_rids = array_keys($user->roles);
     $placeholders = implode(',', array_fill(0, count($user_rids), '%d'));
-    $result = db_query("SELECT name, description FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) ORDER BY r.rid", $user_rids );
+    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) AND h.help <> '' ORDER BY r.rid", $user_rids );
   }
 
   $role_help_items = array();
   while ($item = db_fetch_array($result)) {
-    $role_help_items[] = theme('role_help_section', $item['name'], $item['description']);
+    $role_help_items[] = theme('role_help_section', $item['name'], $item['help']);
   }
   if (!count($role_help_items)) {
     $header = t('No role help text has been set.');
@@ -245,7 +300,18 @@ function role_help_theme() {
         'description' => NULL,
       ),
     ),
+    'role_name' => array(
+      'arguments' => array('name' => NULL, 'rid' => NULL),
+    ),
   );
+}
+
+/**
+ * Implementation of hook_theme_registry_alter().
+ */
+function role_help_theme_registry_alter(&$theme_registry) {
+  // Override to provide our extras to the role list admin page.
+  $theme_registry['user_admin_new_role']['function'] = 'role_help_user_admin_new_role';
 }
 
 /**
@@ -257,8 +323,52 @@ function role_help_theme() {
  *  The role description text.
  */
 function theme_role_help_section($name, $description) {
-  $output .= '<h3>'. ucfirst($name) .'</h3>';
+  $output .= '<h3>'. ucfirst(check_plain($name)) .'</h3>';
   $output .= '<div>'. check_markup($description, variable_get('role_help_format', FILTER_FORMAT_DEFAULT), FALSE) .'</div>';
   return $output;
 }
 
+/**
+ * Theme the new-role form.
+ *
+ * Override of theme_user_admin_new_role() to add theme('role_name').
+ *
+ * @ingroup themeable
+ */
+function role_help_user_admin_new_role($form) {
+  $header = array(t('Name'), array('data' => t('Operations'), 'colspan' => 2));
+  foreach (user_roles() as $rid => $name) {
+    $edit_permissions = l(t('edit permissions'), 'admin/user/permissions/'. $rid);
+    if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+      $rows[] = array(theme('role_name', $name, $rid), l(t('edit role'), 'admin/user/roles/edit/'. $rid), $edit_permissions);
+    }
+    else {
+      $rows[] = array($name, t('locked'), $edit_permissions);
+    }
+    if (!empty($summary)) {
+      $rows[] = array($summary);
+    }
+  }
+  $rows[] = array(drupal_render($form['name']), array('data' => drupal_render($form['submit']), 'colspan' => 2));
+
+  $output = drupal_render($form);
+  $output .= theme('table', $header, $rows);
+
+  return $output;
+}
+
+/**
+ * Add role summary to role name.
+ *
+ * @param $name
+ *   Role name
+ * @param $rid
+ *   Role id
+ *
+ * @ingroup themeable
+ */
+function theme_role_name($name, $rid = NULL) {
+  // @todo: fix so this query isn't run once for each role!
+  $summary = db_result(db_query("SELECT summary FROM {role_help} d WHERE d.rid = %d", $rid));
+  return '<div class="role-name">' . check_plain($name) . '</div>' . theme('placeholder', $summary);
+}
