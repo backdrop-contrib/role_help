@@ -193,9 +193,8 @@ function role_help_admin_settings_submit($form, &$form_state) {
       db_query("INSERT INTO {role_help} (rid, description) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);
     }
   }
-  // clear cache so anon users either gain or lose the site help menu item
-  cache_clear_all('*', 'cache_menu', TRUE);
-
+  // Rebuild menus so anon users either gain or lose the site help menu item.
+  menu_rebuild();
 
   drupal_set_message(t('The role help settings have been saved.'));
 }
