@@ -188,6 +188,19 @@ function role_help_form_user_profile_form_alter(&$form, &$form_state) {
 }
 
 /**
+ * Implementation of hook_form_FORM_ID_alter(): user_register.
+ *
+ * Add role summaries to the user register form role checkboxes.
+ */
+function role_help_form_user_register_alter(&$form, &$form_state) {
+  // The form is used both for admins and new user registration; in the
+  // later case the roles element is not present.
+  if (isset($form['roles'])) {
+    $form['roles']['#after_build'][] = 'role_help_role_checkboxes_after_build';
+  }
+}
+
+/**
  * Implementation of hook_form_FORM_ID_alter(): role_delegation_roles_form.
  *
  * Add role summaries to role_delegation module's role checkboxes.
