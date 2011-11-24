@@ -1,16 +1,4 @@
 <?php
-/* TODO Form buttons can define custom #submit and #validate handlers.
-   All forms can have #validate and #submit properties containing lists of
-   validation and submission handlers to be executed when a user submits data.
-   Previously, if a form featured multiple submission buttons to initiate
-   different actions (updating a record versus deleting, for example), it was
-   necessary to check the incoming form_values['op'] for the name of the
-   clicked button, then execute different code based on its value. Now, it is
-   possible to define #validate and #submit properties on each individual form
-   button if desired. */
-
-// role_help
-
 /**
  * @file
  * The Role Help module allows a site admin (with the 'administer access control' permission)
@@ -128,12 +116,10 @@ function role_help_form_user_admin_role_alter(&$form, &$form_state) {
  * Save or update text, delete with role.
  */
 function role_help_user_admin_role_form_submit($form, &$form_state) {
-/* TODO The 'op' element in the form values is deprecated.
-   Each button can have #validate and #submit functions associated with it.
-   Thus, there should be one button that submits the form and which invokes
-   the normal form_id_validate and form_id_submit handlers. Any additional
-   buttons which need to invoke different validate or submit functionality
-   should have button-specific functions. */
+  // TODO? The 'op' element in the form values is deprecated.
+  // See Coder for more details.
+  // However, core's user_admin_role_submit() is making use of this too
+  // so eh.
   if ($form_state['values']['op'] == t('Save role')) {
     if ($form_state['values']['role_help'] != '') {
       // text set: update or insert an entry
@@ -151,12 +137,6 @@ function role_help_user_admin_role_form_submit($form, &$form_state) {
       db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
     }
   }
-/* TODO The 'op' element in the form values is deprecated.
-   Each button can have #validate and #submit functions associated with it.
-   Thus, there should be one button that submits the form and which invokes
-   the normal form_id_validate and form_id_submit handlers. Any additional
-   buttons which need to invoke different validate or submit functionality
-   should have button-specific functions. */
   else if ($form_state['values']['op'] == t('Delete role')) {
     // role deleted: delete entry
     db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
