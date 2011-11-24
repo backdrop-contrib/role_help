@@ -1,5 +1,4 @@
 <?php
-
 /**
  * @file
  * Install, update and uninstall functions for the Role Help module.
@@ -35,7 +34,8 @@ function role_help_schema() {
 
 /**
  * Implementation of hook_install().
- * Create table.
+ *
+ * Install schema.
  * Display a welcome message with link to get started.
  */
 function role_help_install() {
@@ -46,11 +46,11 @@ function role_help_install() {
 
 /**
  * Implementation of hook_uninstall().
- * Drop the table.
+ *
+ * Uninstall schema.
  */
 function role_help_uninstall() {
   // Remove tables.
   drupal_uninstall_schema('role_help');
-
 }
 
