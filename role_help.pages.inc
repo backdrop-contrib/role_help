@@ -52,17 +52,17 @@ function role_help_admin_settings() {
   #$form['#submit'] = array('role_help_admin_settings_submit' => array());
 
   $form['anonymous_help'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Anonymous user'),
-      '#default_value' => $descriptions[1],
-      '#description' => t('A description of what an anonymous user can accomplish. You should only set this if anonymous users have rights beyond accessing content. If non-empty, this will be shown to anonymous users on the site help page.'),
-    );
+    '#type' => 'textarea',
+    '#title' => t('Anonymous user'),
+    '#default_value' => $descriptions[1],
+    '#description' => t('A description of what an anonymous user can accomplish. You should only set this if anonymous users have rights beyond accessing content. If non-empty, this will be shown to anonymous users on the site help page.'),
+  );
   $form['authenticated_help'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Authenticated user'),
-      '#default_value' => $descriptions[2],
-      '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
-    );
+    '#type' => 'textarea',
+    '#title' => t('Authenticated user'),
+    '#default_value' => $descriptions[2],
+    '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
+  );
 
 
   $form['role_help_format'] = filter_form(variable_get('role_help_format', FILTER_FORMAT_DEFAULT));
@@ -70,7 +70,10 @@ function role_help_admin_settings() {
   $form['role_help_format']['#collapsed'] = 0;
   $form['role_help_format']['#description'] = 'The input format to use for all role help text.';
 
-  $form['submit'] = array('#type' => 'submit', '#value' => t('Save configuration') );
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Save configuration'),
+  );
 
   return $form;
 }
@@ -83,7 +86,10 @@ function role_help_admin_settings() {
 function role_help_admin_settings_submit($form, &$form_state) {
   variable_set('role_help_format', $form_state['values']['format']);
 
-  foreach (array(1 => 'anonymous_help', 2 => 'authenticated_help') as $rid => $role) {
+  foreach (array(
+    1 => 'anonymous_help',
+    2 => 'authenticated_help',
+  ) as $rid => $role) {
     db_query('DELETE FROM {role_help} WHERE rid = %d', $rid);
     if ($form_state['values'][$role] != '') {
       db_query("INSERT INTO {role_help} (rid, help) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);
