@@ -23,7 +23,6 @@ function role_help_schema() {
         'type' => 'text',
         'size' => 'big',
         'not null' => FALSE,
-        'default' => '',
       ),
       'summary' => array(
         'type' => 'varchar',
@@ -41,44 +40,8 @@ function role_help_schema() {
 /**
  * Implementation of hook_install().
  *
- * Install schema.
  * Display a welcome message with link to get started.
  */
 function role_help_install() {
-  // Create tables.
-  drupal_install_schema('role_help');
-  drupal_set_message(t('Role Help has been installed. You can add descriptions to a role when you edit it.'));
-}
-
-/**
- * Implementation of hook_uninstall().
- *
- * Uninstall schema.
- */
-function role_help_uninstall() {
-  // Remove tables.
-  drupal_uninstall_schema('role_help');
-}
-
-/**
- * Add the summary field and change the description field.
- */
-function role_help_update_6001(&$sandbox) {
-  $ret = array();
-  // Rename the 'description' field to 'help' and allow it to be NULL.
-  db_change_field($ret, 'role_help', 'description', 'help', array(
-    'description' => 'Description text for the role.',
-    'type' => 'text',
-    'size' => 'big',
-    'not null' => FALSE, // Changed.
-    'default' => '',
-  ));
-  // Add the summary field.
-  db_add_field($ret, 'role_help', 'summary', array(
-    'type' => 'varchar',
-    'length' => '255',
-    'not null' => FALSE,
-    'description' => 'Summary details about a role.',
-  ));
-  return $ret;
+  drupal_set_message(st('Role Help has been installed. You can add descriptions to a role when you edit it.'));
 }

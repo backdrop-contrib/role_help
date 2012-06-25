@@ -21,12 +21,18 @@ function role_help_page() {
 
     global $user;
     $user_rids = array_keys($user->roles);
-    $placeholders = implode(',', array_fill(0, count($user_rids), '%d'));
-    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) AND h.help <> '' ORDER BY r.rid", $user_rids );
+    $place_holder_data = array();
+    $place_holder_vals = array();
+    foreach ($user_rids as $index => $user_rid) {
+      $place_holder_data[] = ':user_rid_' . $index;
+      $place_holder_vals[':user_rid_' . $index] = $user_rid;
+    }
+    $placeholders = implode(',', $place_holder_data);
+    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) AND h.help <> '' ORDER BY r.rid", $place_holder_vals);
   }
 
   $role_help_items = array();
-  while ($item = db_fetch_array($result)) {
+  while ($item = $result->fetchAssoc()) {
     $role_help_items[] = theme('role_help_section', $item['name'], $item['help']);
   }
   if (!count($role_help_items)) {
@@ -45,8 +51,9 @@ function role_help_page() {
  * Set the description for the anonymous and authorized users here.
  */
 function role_help_admin_settings() {
-  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (%d, %d)', 1, 2);
-  while ($item = db_fetch_array($result)) {
+  $descriptions = array(1 => '', 2 => '');
+  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (1, 2)');
+  while ($item = $result->fetchAssoc()) {
     $descriptions[$item['rid']] = $item['help'];
   }
   #$form['#submit'] = array('role_help_admin_settings_submit' => array());
@@ -64,11 +71,12 @@ function role_help_admin_settings() {
     '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
   );
 
-
-  $form['role_help_format'] = filter_form(variable_get('role_help_format', FILTER_FORMAT_DEFAULT));
-  $form['role_help_format']['#collapsible'] = 0;
-  $form['role_help_format']['#collapsed'] = 0;
-  $form['role_help_format']['#description'] = 'The input format to use for all role help text.';
+  $form['role_help_format'] = array(
+    '#type' => 'text_format',
+    '#base_type' => 'value',
+    '#default_value' => '',
+    '#format' => variable_get('role_help_format', NULL),
+  );
 
   $form['submit'] = array(
     '#type' => 'submit',
@@ -84,15 +92,15 @@ function role_help_admin_settings() {
  * Save or update text, delete if blanked.
  */
 function role_help_admin_settings_submit($form, &$form_state) {
-  variable_set('role_help_format', $form_state['values']['format']);
+  variable_set('role_help_format', $form_state['values']['role_help_format']['format']);
 
   foreach (array(
     1 => 'anonymous_help',
     2 => 'authenticated_help',
   ) as $rid => $role) {
-    db_query('DELETE FROM {role_help} WHERE rid = %d', $rid);
+    db_query('DELETE FROM {role_help} WHERE rid = :rid', array(':rid' => $rid));
     if ($form_state['values'][$role] != '') {
-      db_query("INSERT INTO {role_help} (rid, help) VALUES (%d, '%s')", $rid, $form_state['values'][$role]);
+      db_query("INSERT INTO {role_help} (rid, help) VALUES (:rid, :help_text)", array(':rid' => $rid, ':help_text' => $form_state['values'][$role]));
     }
   }
   // Rebuild menus so anon users either gain or lose the site help menu item.
