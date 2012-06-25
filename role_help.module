@@ -21,7 +21,7 @@ function role_help_help($path = '', $arg) {
   switch ($path) {
     // main help page
     case "admin/help#role_help":
-      $output = '<p>' .  t("The Role Help module displays a help page that is tailored to a user, showing information for each role they have assigned to them. This is visible to anonymous users only if a description is set for that role.") . '</p>';
+      $output = '<p>' . t("The Role Help module displays a help page that is tailored to a user, showing information for each role they have assigned to them. This is visible to anonymous users only if a description is set for that role.") . '</p>';
       $output .= '<p>' . t("Set description text for a role on its settings pages.") . '</p>';
       $output .= t('<p>You can</p>
 <ul>
@@ -151,7 +151,7 @@ function role_help_user_admin_role_form_submit($form, &$form_state) {
     }
     drupal_set_message(t('The role help text has been saved.'));
   }
-  else if ($form_state['values']['op'] == t('Delete role')) {
+  elseif ($form_state['values']['op'] == t('Delete role')) {
     // Role deleted: delete our entry.
     db_query('DELETE FROM {role_help} WHERE rid = %d', $form_state['values']['rid']);
   }
