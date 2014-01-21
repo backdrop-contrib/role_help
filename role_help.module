@@ -30,7 +30,7 @@ function role_help_help($path = '', $arg) {
 <li>set descriptions for the anonymous and authenticated roles on the <a href="@admin-role-help-page">role help settings page</a>.</li>
 <li>set the input format for all role help text on the <a href="@admin-role-help-page">role help settings page</a>.</li></ul>',
         array(
-        '@admin-roles-page' => url('admin/user/roles'),
+        '@admin-roles-page' => url('admin/people/permissions/roles'),
         '@admin-role-help-page' => url('admin/config/people/role_help'),
       )) . '';
       return $output;

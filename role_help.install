@@ -43,5 +43,5 @@ function role_help_schema() {
  * Display a welcome message with link to get started.
  */
 function role_help_install() {
-  drupal_set_message(st('Role Help has been installed. You can add descriptions to a role when you edit it.'));
+  drupal_set_message(st('Role Help has been installed. You can add descriptions to a role when you edit it, and add descriptions for the anonymous and authenticated user roles in the !settings page.', array('!settings' => l('Role help settings', 'admin/config/people/role_help'))));
 }
