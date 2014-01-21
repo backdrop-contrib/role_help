@@ -10,6 +10,8 @@
  * Access control admins are shown all roles.
  */
 function role_help_page() {
+  global $user;
+
   if (user_access('administer permissions')) {
     $header = t('You are an access control administrator. All roles with help text are listed below:');
 
@@ -19,7 +21,6 @@ function role_help_page() {
   else {
     $header = t('Your user account is enabled to do the following on this site:');
 
-    global $user;
     $user_rids = array_keys($user->roles);
     $place_holder_data = array();
     $place_holder_vals = array();
@@ -51,23 +52,28 @@ function role_help_page() {
  * Set the description for the anonymous and authorized users here.
  */
 function role_help_admin_settings() {
-  $descriptions = array(1 => '', 2 => '');
-  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (1, 2)');
+  $descriptions = array(
+    DRUPAL_ANONYMOUS_RID => '',
+    DRUPAL_AUTHENTICATED_RID => '',
+  );
+  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (:anon_rid, :auth_rid)', array(
+    ':anon_rid' => DRUPAL_ANONYMOUS_RID,
+    ':auth_rid' => DRUPAL_AUTHENTICATED_RID,
+  ));
   while ($item = $result->fetchAssoc()) {
     $descriptions[$item['rid']] = $item['help'];
   }
-  #$form['#submit'] = array('role_help_admin_settings_submit' => array());
 
   $form['anonymous_help'] = array(
     '#type' => 'textarea',
     '#title' => t('Anonymous user'),
-    '#default_value' => $descriptions[1],
+    '#default_value' => $descriptions[DRUPAL_ANONYMOUS_RID],
     '#description' => t('A description of what an anonymous user can accomplish. You should only set this if anonymous users have rights beyond accessing content. If non-empty, this will be shown to anonymous users on the site help page.'),
   );
   $form['authenticated_help'] = array(
     '#type' => 'textarea',
     '#title' => t('Authenticated user'),
-    '#default_value' => $descriptions[2],
+    '#default_value' => $descriptions[DRUPAL_AUTHENTICATED_RID],
     '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
   );
 
@@ -95,8 +101,8 @@ function role_help_admin_settings_submit($form, &$form_state) {
   variable_set('role_help_format', $form_state['values']['role_help_format']['format']);
 
   foreach (array(
-    1 => 'anonymous_help',
-    2 => 'authenticated_help',
+    DRUPAL_ANONYMOUS_RID => 'anonymous_help',
+    DRUPAL_AUTHENTICATED_RID => 'authenticated_help',
   ) as $rid => $role) {
     db_query('DELETE FROM {role_help} WHERE rid = :rid', array(':rid' => $rid));
     if ($form_state['values'][$role] != '') {

@@ -82,18 +82,17 @@ function role_help_menu() {
  * Menu access callback for the role help page.
  */
 function _role_help_menu_access() {
+  global $user;
+
   // The permission has ultimate authority.
   if (!user_access('access role help descriptions')) {
     return FALSE;
   }
 
-  global $user;
-
   // Anonymous users have access if there is a description for that role.
-  //$anon_access = db_result(db_query('SELECT help FROM {role_help} WHERE rid = 1')) ? 1 : 0;
-  $anon_access = db_query('SELECT help FROM {role_help} WHERE rid = 1')->fetchObject();
-
-  #dsm($anon_access);
+  $anon_access = db_query('SELECT help FROM {role_help} WHERE rid = :anon_rid', array(
+    ':anon_rid' => DRUPAL_ANONYMOUS_RID,
+  ));
 
   return $user->uid || $anon_access;
 }
