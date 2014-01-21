@@ -15,8 +15,7 @@ function role_help_page() {
   if (user_access('administer permissions')) {
     $header = t('You are an access control administrator. All roles with help text are listed below:');
 
-    // The h.help <> '' WHERE clause filters out both NULL and empty text.
-    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE h.help <> ''");
+    $result = db_query("SELECT r.name, h.help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE h.help <> '' AND h.help IS NOT NULL");
   }
   else {
     $header = t('Your user account is enabled to do the following on this site:');
@@ -29,19 +28,19 @@ function role_help_page() {
       $place_holder_vals[':user_rid_' . $index] = $user_rid;
     }
     $placeholders = implode(',', $place_holder_data);
-    $result = db_query("SELECT name, help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) AND h.help <> '' ORDER BY r.rid", $place_holder_vals);
+    $result = db_query("SELECT r.name, h.help FROM {role} r INNER JOIN {role_help} h ON r.rid = h.rid WHERE r.rid IN ($placeholders) AND h.help <> '' AND h.help IS NOT NULL ORDER BY r.rid", $place_holder_vals);
   }
 
   $role_help_items = array();
   while ($item = $result->fetchAssoc()) {
-    $role_help_items[] = theme('role_help_section', $item['name'], $item['help']);
+    $role_help_items[] = theme('role_help_section', array('name' => $item['name'], 'description' => $item['help']));
   }
   if (!count($role_help_items)) {
     $header = t('No role help text has been set.');
   }
 
   $output = "<p>$header</p>";
-  $output .= theme('item_list', $role_help_items);
+  $output .= theme('item_list', array('items' => $role_help_items));
 
   return $output;
 }

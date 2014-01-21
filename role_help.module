@@ -243,7 +243,7 @@ function role_help_theme() {
   return array(
     'role_help_section' => array(
       'file' => 'role_help.module',
-      'arguments' => array(
+      'variables' => array(
         'name' => NULL,
         'description' => NULL,
       ),
@@ -270,9 +270,9 @@ function role_help_theme_registry_alter(&$theme_registry) {
  * @param $description
  *  The role description text.
  */
-function theme_role_help_section($name, $description) {
-  $output .= '<h3>' . ucfirst(check_plain($name)) . '</h3>';
-  $output .= '<div>' . check_markup($description, variable_get('role_help_format', FILTER_FORMAT_DEFAULT), FALSE) . '</div>';
+function theme_role_help_section($variables) {
+  $output = '<h3>' . ucfirst(check_plain($variables['name'])) . '</h3>';
+  $output .= '<div>' . check_markup($variables['description'], variable_get('role_help_format', filter_fallback_format()), FALSE) . '</div>';
   return $output;
 }
 
