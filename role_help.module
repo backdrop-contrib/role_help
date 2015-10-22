@@ -33,11 +33,12 @@ function role_help_help($path = '', $arg) {
         '@admin-roles-page' => url('admin/people/permissions/roles'),
         '@admin-role-help-page' => url('admin/config/people/role_help'),
       )) . '';
+
       return $output;
     case "admin/user/role_help":
-      $output = '<p>Set descriptions for the anonymous user and authenticated user roles here. Descriptions for other roles are set on each role\'s settings page. You can also set an input format for all role help texts here.</p>';
-      return $output;
+      $output = '<p>' . t('Set descriptions for the anonymous user and authenticated user roles here. Descriptions for other roles are set on each role\'s settings page. You can also set an input format for all role help texts here.') . '</p>';
 
+      return $output;
   }
 }
 
