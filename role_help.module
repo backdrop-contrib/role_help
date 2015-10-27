@@ -132,57 +132,59 @@ function role_help_form_user_admin_role_alter(&$form, &$form_state) {
     '#description' => t('A more detailed description of what a user with this role can accomplish. This will be shown to users on the site help page.'),
   );
   $form['name']['#weight'] = -10;
-  $form['#submit'][] = 'role_help_user_admin_role_form_submit';
+  $form['actions']['submit']['#submit'][] = 'role_help_user_admin_role_submit';
 }
 
 /**
- * Custom submit function for user_admin_role form.
+ * Implementation of hook_form_FORM_ID_alter(): user_admin_roles.
  *
- * Save or update text, delete with role.
+ * Override the form submit handler for the Roles form
  */
-function role_help_user_admin_role_form_submit($form, &$form_state) {
-  // TODO? The 'op' element in the form values is deprecated.
-  // See Coder for more details.
-  // However, core's user_admin_role_submit() is making use of this too
-  // so eh.
+function role_help_form_user_admin_roles_alter(&$form, &$form_state) {
+  $form['add']['#submit'] = array('role_help_user_admin_role_submit');
+}
+
+/**
+ * Implementation of hook_form_FORM_ID_alter(): user_admin_role_delete_confirm.
+ *
+ * Add a form submit handler to the role delete confirmation form to remove role help text.
+ */
+function role_help_form_user_admin_role_delete_confirm_alter(&$form, &$form_state) {
+  $form['#submit'][] = 'role_help_user_admin_role_delete_confirm_submit';
+}
+
+/**
+ * Replaces user_admin_role_submit() to redirect user to role after creation, and show
+ * custom message after edit.
+ */
+function role_help_user_admin_role_submit($form, &$form_state) {
+  $role = (object) $form_state['values'];
   if ($form_state['values']['op'] == t('Save role')) {
+    user_role_save($role);
     $role_help = $form_state['values']['role_help'];
-    $role_help['rid'] = $form_state['values']['rid'];
+    $role_help['rid'] = $role->rid;
     if ($role_help['exists']) {
       drupal_write_record('role_help', $role_help, 'rid');
     }
     else {
       drupal_write_record('role_help', $role_help);
     }
-    drupal_set_message(t('The role help text has been saved.'));
+    drupal_set_message(t('The role name, summary and help text have been saved.'));
+    $form_state['redirect'] = 'admin/people/permissions/roles';
   }
-  elseif ($form_state['values']['op'] == t('Delete role')) {
-    // Role deleted: delete our entry.
-    db_query('DELETE FROM {role_help} WHERE rid = :rid', array(':rid' => $form_state['values']['rid']));
+  elseif ($form_state['values']['op'] == t('Add role')) {
+    user_role_save($role);
+    drupal_set_message(t('The role has been added. Please edit the role summary and help text.'));
+    $form_state['redirect'] = 'admin/people/permissions/roles/edit/' . $role->rid;
   }
 }
 
 /**
- * Implementation of hook_form_FORM_ID_alter(): user_admin_new_role.
+ * Handle role deletion.
  */
-function role_help_form_user_admin_new_role_alter(&$form, &$form_state) {
-  $form['#submit'][] = 'role_help_user_admin_new_role_form_submit';
+function role_help_user_admin_role_delete_confirm_submit($form, &$form_state) {
+  db_query('DELETE FROM {role_help} WHERE rid = :rid', array(':rid' => $form_state['values']['rid']));
 }
-
-/**
- * Custom submit function for user_admin_new_role form.
- *
- * Redirect the user to the detailed role edit page.
- */
-function role_help_user_admin_new_role_form_submit($form, &$form_state) {
-  $rid = db_last_insert_id('role', 'rid');
-  // Prompt for edit of summary, description after quick add.
-  if ($rid) {
-    drupal_set_message(t('Please edit the role summary and help text.'));
-    $form_state['redirect'] = 'admin/user/roles/edit/' . $rid;
-  }
-}
-
 
 /**
  * Implementation of hook_form_FORM_ID_alter(): user_profile_form.
