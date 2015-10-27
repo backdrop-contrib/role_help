@@ -16,8 +16,6 @@
  * Implementation of hook_help().
  */
 function role_help_help($path = '', $arg) {
-  $output = '';
-
   switch ($path) {
     // main help page
     case "admin/help#role_help":
@@ -268,10 +266,7 @@ function role_help_theme_registry_alter(&$theme_registry) {
 /**
  * Theme a role help section.
  *
- * @param $name
- *  The role name.
- * @param $description
- *  The role description text.
+ * @ingroup themeable
  */
 function theme_role_help_section($variables) {
   $output = '<h3>' . ucfirst(check_plain($variables['name'])) . '</h3>';
