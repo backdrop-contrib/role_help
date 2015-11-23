@@ -260,8 +260,9 @@ function role_help_theme() {
  */
 function role_help_theme_registry_alter(&$theme_registry) {
   // Override to provide our extras to the role list admin page.
-  $theme_registry['user_admin_new_role']['function'] = 'role_help_user_admin_new_role';
+  $theme_registry['user_admin_roles']['function'] = 'role_help_user_admin_roles';
 }
+
 
 /**
  * Theme a role help section.
@@ -275,52 +276,39 @@ function theme_role_help_section($variables) {
 }
 
 /**
- * Theme the new-role form.
+ * Theme the role form.
  *
- * Override of theme_user_admin_new_role() to add theme('role_name').
+ * Override of theme_user_admin_roles() to add theme('role_name').
  *
  * @ingroup themeable
  */
-function role_help_user_admin_new_role($form) {
-  $header = array(t('Name'), array(
-      'data' => t('Operations'),
-      'colspan' => 2,
-    ));
-  foreach (user_roles() as $rid => $name) {
-    $edit_permissions = l(t('edit permissions'), 'admin/user/permissions/' . $rid);
-    if (!in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
-      $rows[] = array(theme('role_name', $name, $rid), l(t('edit role'), 'admin/user/roles/edit/' . $rid), $edit_permissions);
+function role_help_user_admin_roles($variables) {
+  $form = $variables['form'];
+
+  $header = array(t('Name'), t('Weight'), array('data' => t('Operations'), 'colspan' => 2));
+  foreach (element_children($form['roles']) as $rid) {
+    $name = $form['roles'][$rid]['#role']->name;
+    $row = array();
+    $edit = " ";
+    $query = db_query("SELECT help FROM {role_help} d WHERE d.rid = :rid", array(':rid' => $rid));
+    $summary = $query->fetchField();
+    if (in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
+      $row[] = t('@name <em>(locked)</em>', array('@name' => $name)) . '<br><div class="description">' . $summary . '</div>';
     }
     else {
-      $rows[] = array($name, t('locked'), $edit_permissions);
+      $row[] = t('@name', array('@name' => $name)) . '<br><div class="description">' . check_plain($summary) . '</div>';
+      $edit = l(t('edit role'), 'admin/people/permissions/roles/edit/' . $rid);
     }
-    if (!empty($summary)) {
-      $rows[] = array($summary);
-    }
+    $row[] = drupal_render($form['roles'][$rid]['weight']);
+    $row[] = $edit;
+    $row[] = l(t('edit permissions'), 'admin/people/permissions/' . $rid);
+    $rows[] = array('data' => $row, 'class' => array('draggable'));
   }
-  $rows[] = array(drupal_render($form['name']), array(
-      'data' => drupal_render($form['submit']),
-      'colspan' => 2,
-    ));
+  $rows[] = array(array('data' => drupal_render($form['name']) . drupal_render($form['add']), 'colspan' => 4, 'class' => 'edit-name'));
 
-  $output = drupal_render($form);
-  $output .= theme('table', $header, $rows);
+  drupal_add_tabledrag('user-roles', 'order', 'sibling', 'role-weight');
 
+  $output = theme('table', array('header' => $header, 'rows' => $rows, 'attributes' => array('id' => 'user-roles')));
+  $output .= drupal_render_children($form);
   return $output;
-}
-
-/**
- * Add role summary to role name.
- *
- * @param $name
- *   Role name
- * @param $rid
- *   Role id
- *
- * @ingroup themeable
- */
-function theme_role_name($name, $rid = NULL) {
-  // @todo: fix so this query isn't run once for each role!
-  $summary = db_result(db_query("SELECT summary FROM {role_help} d WHERE d.rid = :rid", array(':rid' => $rid)));
-  return '<div class="role-name">' . check_plain($name) . '</div>' . theme('placeholder', $summary);
 }
