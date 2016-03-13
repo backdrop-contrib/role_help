@@ -68,7 +68,7 @@ function role_help_menu() {
     'description' => 'Set the input format and role help text for anonymous and authorized roles.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('role_help_admin_settings'),
-    'access arguments' => array('administer access control'),
+    'access arguments' => array('administer permissions'),
     'type' => MENU_NORMAL_ITEM,
     'weight' => 1,
     'file' => 'role_help.pages.inc',
