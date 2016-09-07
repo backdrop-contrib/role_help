@@ -223,10 +223,10 @@ function role_help_form_role_delegation_roles_form_alter(&$form, &$form_state) {
  * individual 'checkbox' elements keyed by rid.
  */
 function role_help_role_checkboxes_after_build($element, &$form_state) {
-  $query = db_query("SELECT rid, help FROM {role_help}");
+  $query = db_query("SELECT rid, summary FROM {role_help}");
   $summary = array();
   while ($data = $query->fetchObject()) {
-    $summary[$data->rid] = $data->help;
+    $summary[$data->rid] = $data->summary;
   }
   // Add role summary to form checkboxes.
   foreach (element_children($element) as $rid) {
