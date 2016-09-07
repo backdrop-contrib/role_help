@@ -290,7 +290,7 @@ function role_help_user_admin_roles($variables) {
     $name = $form['roles'][$rid]['#role']->name;
     $row = array();
     $edit = " ";
-    $query = db_query("SELECT help FROM {role_help} d WHERE d.rid = :rid", array(':rid' => $rid));
+    $query = db_query("SELECT summary FROM {role_help} d WHERE d.rid = :rid", array(':rid' => $rid));
     $summary = $query->fetchField();
     if (in_array($rid, array(DRUPAL_ANONYMOUS_RID, DRUPAL_AUTHENTICATED_RID))) {
       $row[] = t('@name <em>(locked)</em>', array('@name' => $name)) . '<br><div class="description">' . $summary . '</div>';
