@@ -55,12 +55,17 @@ function role_help_admin_settings() {
     DRUPAL_ANONYMOUS_RID => '',
     DRUPAL_AUTHENTICATED_RID => '',
   );
-  $result = db_query('SELECT rid, help FROM {role_help} WHERE rid IN (:anon_rid, :auth_rid)', array(
+  $summary = array(
+    DRUPAL_ANONYMOUS_RID => '',
+    DRUPAL_AUTHENTICATED_RID => '',
+  );
+  $result = db_query('SELECT * FROM {role_help} WHERE rid IN (:anon_rid, :auth_rid)', array(
     ':anon_rid' => DRUPAL_ANONYMOUS_RID,
     ':auth_rid' => DRUPAL_AUTHENTICATED_RID,
   ));
   while ($item = $result->fetchAssoc()) {
     $descriptions[$item['rid']] = $item['help'];
+    $summary[$item['rid']] = $item['summary'];
   }
 
   $form['anonymous_help'] = array(
@@ -74,6 +79,19 @@ function role_help_admin_settings() {
     '#title' => t('Authenticated user'),
     '#default_value' => $descriptions[DRUPAL_AUTHENTICATED_RID],
     '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
+  );
+
+  $form['anonymous_summary'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Anonymous user summary'),
+    '#default_value' => $summary[DRUPAL_ANONYMOUS_RID],
+    '#description' => t('Summary of what permissions are assigned to this role, and how the role is used. This will be shown on the role list and user profile edit pages.'),
+  );
+  $form['authenticated_summary'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Authenticated user summary'),
+    '#default_value' => $summary[DRUPAL_AUTHENTICATED_RID],
+    '#description' => t('Summary of what permissions are assigned to this role, and how the role is used. This will be shown on the role list and user profile edit pages.'),
   );
 
   $form['role_help_format'] = array(
@@ -100,12 +118,12 @@ function role_help_admin_settings_submit($form, &$form_state) {
   variable_set('role_help_format', $form_state['values']['role_help_format']['format']);
 
   foreach (array(
-    DRUPAL_ANONYMOUS_RID => 'anonymous_help',
-    DRUPAL_AUTHENTICATED_RID => 'authenticated_help',
+    DRUPAL_ANONYMOUS_RID => array('help' => 'anonymous_help', 'summary' => 'anonymous_summary'),
+    DRUPAL_AUTHENTICATED_RID => array('help' => 'authenticated_help', 'summary' => 'authenticated_summary'),
   ) as $rid => $role) {
     db_query('DELETE FROM {role_help} WHERE rid = :rid', array(':rid' => $rid));
-    if ($form_state['values'][$role] != '') {
-      db_query("INSERT INTO {role_help} (rid, help) VALUES (:rid, :help_text)", array(':rid' => $rid, ':help_text' => $form_state['values'][$role]));
+    if ($form_state['values'][$role['help']] != '' || $form_state['values'][$role['summary']] != '') {
+      db_query("INSERT INTO {role_help} (rid, help, summary) VALUES (:rid, :help_text, :summary)", array(':rid' => $rid, ':help_text' => $form_state['values'][$role['help']], ':summary' => $form_state['values'][$role['summary']]));
     }
   }
   // Rebuild menus so anon users either gain or lose the site help menu item.
