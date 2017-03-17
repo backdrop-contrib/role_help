@@ -78,7 +78,7 @@ function role_help_admin_settings() {
     '#type' => 'textarea',
     '#title' => t('Authenticated user'),
     '#default_value' => $descriptions[DRUPAL_AUTHENTICATED_RID],
-    '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page. You should only'),
+    '#description' => t('A description of what an authenticated user can accomplish. If non-empty, this will be shown to authenticated users on the site help page.'),
   );
 
   $form['anonymous_summary'] = array(
