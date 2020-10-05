@@ -1,3 +1,6 @@
-name = Role help
-description = "Displays information about roles, tailored for each user."
-core = 7.x
+name = Role Help
+description = Displays information about roles, tailored for each user.
+backdrop = 1.x
+type = module
+
+configure = admin/config/people/roles

@@ -5,18 +5,18 @@
  */
 
 /**
- * Implementation of hook_schema().
+ * Implements hook_schema().
  */
 function role_help_schema() {
   $schema['role_help'] = array(
     'description' => 'Stores descriptions for roles.',
     'fields' => array(
-      'rid' => array(
-        'description' => 'The {role}.rid.',
-        'type' => 'int',
-        'unsigned' => TRUE,
+      'role' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'description' => 'Primary key: The name of the role.',
         'not null' => TRUE,
-        'default' => 0,
+        'default' => '',
       ),
       'help' => array(
         'description' => 'Description text for the role.',
@@ -31,17 +31,76 @@ function role_help_schema() {
         'description' => 'Summary details about a role.',
       ),
     ),
-    'primary key' => array('rid'),
+    'primary key' => array('role'),
   );
 
   return $schema;
 }
 
+
 /**
- * Implementation of hook_install().
+ * Implements hook_update_dependencies().
  *
- * Display a welcome message with link to get started.
+ * @See user_update_1007().
  */
-function role_help_install() {
-  drupal_set_message(st('Role Help has been installed. You can add descriptions to a role when you edit it, and add descriptions for the anonymous and authenticated user roles in the !settings page.', array('!settings' => l(st('Role help settings'), 'admin/config/people/role_help'))));
+function role_help_update_dependencies() {
+  // We need to run our update before the core user_update_1007() runs because
+  // that function replaces rids with role names and drops the roles table. We
+  // need to use that table as the key for our own table changes before it goes
+  // away.
+ $dependencies['user'][1007] = array(
+    'role_help' => 1000,
+  );
+  return $dependencies;
+}
+
+
+/**
+ * Implements hook_update_N().
+ */
+function role_help_update_1000() {
+  // Go through the (not yet removed) role table and get rids and names so we
+  // can update our table with the proper role keys, which are the machine names
+  // of the old roles.
+  $old_roles = db_query('
+    SELECT rid, name
+    FROM {role}
+    ')
+    ->fetchAllKeyed();
+
+  // Update the two predefined names to match what Backdrop uses.
+  $old_roles[1] = 'anonymous';
+  $old_roles[2] = 'authenticated';
+
+  // Change the field in table role_help, if it exists. See user_update_1007()
+  // for something similar (and why we needed to change the dependency order).
+  if (db_field_exists('role_help', 'rid')) {
+    db_drop_primary_key('role_help');
+    db_drop_index('role_help', 'rid');
+    $role_column = array(
+      'type' => 'varchar',
+      'length' => 64,
+      'description' => 'Primary Key: The name of the role.',
+      'not null' => TRUE,
+      'default' => '',
+    );
+    db_change_field('role_help', 'rid', 'role', $role_column);
+    db_add_primary_key('role_help', array('role'));
+    db_add_index('role_help', 'role', array('role'));
+  }
+
+  // Now go through our altered table and replace the obsolete rids with the
+  // names from our table.
+  foreach ($old_roles as $rid => $name) {
+    db_query('
+      UPDATE {role_help}
+      SET role = :role
+      WHERE role = :rid
+      ', array(':rid' => $rid, ':role' => $name));
+  }
+
+  $config = config('role_help.settings');
+  $config->set('role_help_format',
+    update_variable_get('role_help_format', 'filtered_html'));
+  update_variable_del('role_help_format');
 }
