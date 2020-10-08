@@ -14,7 +14,7 @@ function role_help_schema() {
       'role' => array(
         'type' => 'varchar',
         'length' => 64,
-        'description' => 'Primary key: The name of the role.',
+        'description' => 'The machine key of the role.',
         'not null' => TRUE,
         'default' => '',
       ),
@@ -39,41 +39,11 @@ function role_help_schema() {
 
 
 /**
- * Implements hook_update_dependencies().
- *
- * @See user_update_1007().
- */
-function role_help_update_dependencies() {
-  // We need to run our update before the core user_update_1007() runs because
-  // that function replaces rids with role names and drops the roles table. We
-  // need to use that table as the key for our own table changes before it goes
-  // away.
- $dependencies['user'][1007] = array(
-    'role_help' => 1000,
-  );
-  return $dependencies;
-}
-
-
-/**
  * Implements hook_update_N().
  */
 function role_help_update_1000() {
-  // Go through the (not yet removed) role table and get rids and names so we
-  // can update our table with the proper role keys, which are the machine names
-  // of the old roles.
-  $old_roles = db_query('
-    SELECT rid, name
-    FROM {role}
-    ')
-    ->fetchAllKeyed();
-
-  // Update the two predefined names to match what Backdrop uses.
-  $old_roles[1] = 'anonymous';
-  $old_roles[2] = 'authenticated';
-
   // Change the field in table role_help, if it exists. See user_update_1007()
-  // for something similar (and why we needed to change the dependency order).
+  // for something similar.
   if (db_field_exists('role_help', 'rid')) {
     db_drop_primary_key('role_help');
     db_drop_index('role_help', 'rid');
@@ -89,15 +59,18 @@ function role_help_update_1000() {
     db_add_index('role_help', 'role', array('role'));
   }
 
-  // Now go through our altered table and replace the obsolete rids with the
-  // names from our table.
-  foreach ($old_roles as $rid => $name) {
+  // When importing, Backdrop will use the old rid as the role, except for the
+  // two predefined roles, which we'll have to change to the new names.
     db_query('
       UPDATE {role_help}
       SET role = :role
       WHERE role = :rid
-      ', array(':rid' => $rid, ':role' => $name));
-  }
+      ', array(':rid' => 1, ':role' => 'anonymous'));
+    db_query('
+      UPDATE {role_help}
+      SET role = :role
+      WHERE role = :rid
+      ', array(':rid' => 2, ':role' => 'authenticated'));
 
   $config = config('role_help.settings');
   $config->set('role_help_format',
