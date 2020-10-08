@@ -24,7 +24,7 @@ function role_help_permission() {
  */
 function role_help_menu() {
   $items['admin/people/role-help'] = array(
-    'title' => 'Roles',
+    'title' => 'Role Help',
     'description' => t('Display all roles that have help text descriptions.'),
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('role_help_admin_page'),
