@@ -5,6 +5,14 @@
  */
 
 /**
+ * Implements hook_uninstall().
+ */
+function role_help_uninstall() {
+  config_clear('role_help.settings', 'role_help_format');
+}
+
+
+/**
  * Implements hook_schema().
  */
 function role_help_schema() {
@@ -14,7 +22,7 @@ function role_help_schema() {
       'role' => array(
         'type' => 'varchar',
         'length' => 64,
-        'description' => 'The machine key of the role.',
+        'description' => 'Primary key: the machine name of the role.',
         'not null' => TRUE,
         'default' => '',
       ),
@@ -50,7 +58,7 @@ function role_help_update_1000() {
     $role_column = array(
       'type' => 'varchar',
       'length' => 64,
-      'description' => 'Primary Key: The name of the role.',
+      'description' => 'Primary key: the machine name of the role.',
       'not null' => TRUE,
       'default' => '',
     );
@@ -59,21 +67,23 @@ function role_help_update_1000() {
     db_add_index('role_help', 'role', array('role'));
   }
 
-  // When importing, Backdrop will use the old rid as the role, except for the
+  // When upgrading, Backdrop will use the old rid as the role, except for the
   // two predefined roles, which we'll have to change to the new names.
     db_query('
       UPDATE {role_help}
       SET role = :role
       WHERE role = :rid
-      ', array(':rid' => 1, ':role' => 'anonymous'));
+      ', array(':rid' => 1, ':role' => BACKDROP_ANONYMOUS_ROLE));
     db_query('
       UPDATE {role_help}
       SET role = :role
       WHERE role = :rid
-      ', array(':rid' => 2, ':role' => 'authenticated'));
+      ', array(':rid' => 2, ':role' => BACKDROP_AUTHENTICATED_ROLE));
 
   $config = config('role_help.settings');
   $config->set('role_help_format',
     update_variable_get('role_help_format', 'filtered_html'));
+  $config->save();
+
   update_variable_del('role_help_format');
 }
