@@ -82,7 +82,7 @@ function role_help_update_1000() {
 
   $config = config('role_help.settings');
   $config->set('role_help_format',
-    update_variable_get('role_help_format', 'filtered_html'));
+    update_variable_get('role_help_format', filter_fallback_format()));
   $config->save();
 
   update_variable_del('role_help_format');
