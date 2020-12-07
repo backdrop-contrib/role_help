@@ -24,12 +24,13 @@ function role_help_permission() {
  */
 function role_help_menu() {
   $items['admin/people/role-help'] = array(
-    'title' => 'Role Help',
+    'title' => 'Role help',
     'description' => t('Display all roles that have help text descriptions.'),
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('role_help_admin_page'),
     'file' => 'role_help.admin.inc',
     'access arguments' => array('administer permissions'),
+    'type' => MENU_LOCAL_TASK,
   );
 
   // If the role_delegation module exists, it will create the path user/%/roles
@@ -79,7 +80,7 @@ function _role_help_menu_access() {
  */
 function role_help_config_info() {
   $prefixes['role_help.settings'] = array(
-    'label' => t('Module name settings'),
+    'label' => t('Role Help settings'),
     'group' => t('Configuration'),
   );
 }
