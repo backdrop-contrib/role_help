@@ -25,7 +25,7 @@ function role_help_permission() {
 function role_help_menu() {
   $items['admin/people/role-help'] = array(
     'title' => 'Role help',
-    'description' => t('Display all roles that have help text descriptions.'),
+    'description' => 'Display all roles that have help text descriptions.',
     'page callback' => 'backdrop_get_form',
     'page arguments' => array('role_help_admin_page'),
     'file' => 'role_help.admin.inc',
@@ -83,6 +83,7 @@ function role_help_config_info() {
     'label' => t('Role Help settings'),
     'group' => t('Configuration'),
   );
+  return $prefixes;
 }
 
 
@@ -212,7 +213,7 @@ function role_help_form_user_admin_role_alter(&$form, &$form_state) {
  *
  * Save the summary and help text for the role and then return to the roles listing.
  *
- * @See user_admin_role_submit().
+ * @See user_admin_role_submit()
  */
 function role_help_user_admin_role_submit($form, &$form_state) {
   // Perform the original handling from user_admin_role_submit().
