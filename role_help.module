@@ -329,9 +329,8 @@ function _role_help_role_list_output($header, $roles_info) {
   }
   return array(
     array(
+      '#type' => 'help',
       '#markup' => $header,
-      '#prefix' => '<p>',
-      '#suffix' => '</p>',
     ),
     array(
       '#markup' => theme('item_list', array('items' => $role_help_items)),
