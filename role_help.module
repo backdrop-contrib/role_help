@@ -200,7 +200,7 @@ function role_help_form_user_admin_role_alter(&$form, &$form_state) {
     '#description' => t('A more detailed description of what a user with this role can accomplish. This will be shown to users on the admin roles listing and, if non-empty, to users on the Roles tab in their profile. The "@format" format (!link) will be applied.',
       array(
         '@format' => $format_name,
-        '!link' => l(t('change this'), 'admin/config/people/role-help'),
+        '!link' => l(t('change this'), 'admin/config/people/roles'),
       )),
   );
   $form['name']['#weight'] = -10;
