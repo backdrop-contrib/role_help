@@ -6,6 +6,8 @@
 
 /**
  * Return the user page in the user's profile.
+ *
+ * Used on user/%/roles page if role_delegation module is not installed.
  */
 function role_help_user_page($account) {
   $header = t('%name is enabled for the following roles on this site:',

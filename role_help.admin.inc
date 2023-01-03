@@ -4,9 +4,10 @@
  * Contains admin callbacks for the Role help module.
  */
 
-
 /**
  * Return the admin listing of all roles and detailed help text.
+ *
+ * Used on admin/people/role-help page.
  */
 function role_help_admin_page() {
   $header = t('All roles with help text are listed below.');
