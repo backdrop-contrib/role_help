@@ -151,8 +151,8 @@ function role_help_user_admin_role_delete_confirm_submit($form, &$form_state) {
  * Implements hook_form_FORM_ID_alter() for user_admin_role.
  *
  * See form at admin/config/people/roles/edit/%user_role.
- * Adds text areas for the role's summary and help text and replace the submit
- * handler when adding or editing a role.
+ * Adds text areas for the role's help text and replace the submit handler when
+ * adding or editing a role.
  */
 function role_help_form_user_admin_role_alter(&$form, &$form_state) {
   if (isset($form['name']['#default_value'])) {
