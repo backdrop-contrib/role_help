@@ -10,6 +10,20 @@ the role descriptions that a user has access to are shown.
 The summaries are shown in the role admin page and in forms that show role
 checkboxes.
 
+Important notes for Backdrop version 1.24.0+
+----------
+
+Beginning with version 1.24.0, Backdrop includes some of the functionality of Role Help, specifically, adding help text to role descriptions (see the change log for details). Although Role Help 1.0.x will not break the website with this version of Backdrop, there will be some confusing conflicts on some forms and pages. Users of Role Help should upgrade to Role Help 1.1.0 with Backdrop versions 1.24.0 and above. 
+
+Role Help 1.1.x+ will still provide pages at
+
+* admin/people/role-help
+* user/N/roles
+
+If you don't want or need those pages, you can disable and uninstall Role Help module, but should do so only _after_ upgrading Backdrop to 1.24.x.
+
+The "Detailed help text" field is specific to Role Help, and will only be shown on the pages provided by Role Help module.
+
 Installation
 ------------
 
@@ -17,10 +31,9 @@ Installation
 
 - Visit the Roles configuration page under Administration > Configuration >
   User Accounts > Roles (admin/config/people/roles). For each role, select
-  Configure Role and enter the summary and help text for the role.
+  Configure Role and enter the admin description, help text, and detailed help text for the role.
 
-- Also on the Roles configuration page, choose the Help text format.
-
+- Also on the Roles configuration page, choose the "Detailed help text" format.
 
 Differences from Drupal 7
 -------------------------
@@ -32,11 +45,6 @@ or accessible from the Role settings page (admin/config/people/roles).
 at help/roles. Backdrop has dropped the Help menu and path. So instead, this
 module optionally provides a list of all roles for administrators at
 admin/people/roles and provides a list of the user's roles at user/%user/roles.
-
-Documentation
--------------
-
-Additional documentation is located in [the Wiki](https://github.com/backdrop-contrib/foo-project/wiki/Documentation).
 
 Issues
 ------

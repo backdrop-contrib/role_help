@@ -5,7 +5,6 @@
  * Main file implementing hooks and callbacks.
  */
 
-
 /**
  * Implements hook_permission().
  */
@@ -17,7 +16,6 @@ function role_help_permission() {
     ),
   );
 }
-
 
 /**
  * Implements hook_menu().
@@ -51,7 +49,6 @@ function role_help_menu() {
   return $items;
 }
 
-
 /**
  * Menu access callback for the role help page.
  */
@@ -74,7 +71,6 @@ function _role_help_menu_access() {
   return $user->uid || $anon_access;
 }
 
-
 /**
  * Implements hook_config_info().
  */
@@ -86,53 +82,49 @@ function role_help_config_info() {
   return $prefixes;
 }
 
-
 /**
  * Implements hook_form_FORM_ID_alter() for user_admin_roles.
  *
  * See form at admin/config/people/roles.
- * Add a setting for the role help text format.
+ * Adds a setting for the "Detailed help text" format to the Roles admin form.
  */
 function role_help_form_user_admin_roles_alter(&$form, &$form_state) {
 
   $form['role_help_format_wrapper'] = array(
     '#type' => 'fieldset',
-    '#title' => t('Help text format'),
+    '#title' => t('Detailed help text format'),
     '#collapsible' => TRUE,
     '#collapsed' => TRUE,
   );
   $form['role_help_format_wrapper']['role_help_format'] = array(
     '#type' => 'select',
     '#title' => t('Format'),
-    '#description' => t('Select the format to be applied to all of the Role help text.'),
+    '#description' => t('Select the format to be applied to the "Detailed help text" used on pages provided by the Role Help module.'),
     '#options' => _role_help_format_names(),
     '#default_value' => config_get('role_help.settings', 'role_help_format'),
   );
 
-  $form['actions']['submit']['#submit'][] = 'role_help_user_admin_roles_order_submit';
-  $form['add']['#submit'][] = 'role_help_user_admin_roles_add_submit';
+  $form['actions']['submit']['#submit'][] = 'role_help_form_user_admin_roles_order_submit';
+  $form['add']['#submit'][] = 'role_help_form_user_admin_roles_add_submit';
 }
 
-
 /**
- * Perform additional handling when saving the Roles configuration.
+ * Perform additional handling when saving the Roles admin form.
  */
-function role_help_user_admin_roles_order_submit($form, &$form_state) {
+function role_help_form_user_admin_roles_order_submit($form, &$form_state) {
   config_set('role_help.settings', 'role_help_format',
     $form_state['input']['role_help_format']);
 }
 
-
 /**
- * Perform additional handling when adding a role from the admin form.
+ * Perform additional handling when adding a role from the Roles admin form.
  *
  * Redirect to the role edit page so we can fill in the summary and help text.
  */
-function role_help_user_admin_roles_add_submit($form, &$form_state) {
+function role_help_form_user_admin_roles_add_submit($form, &$form_state) {
   $role = $form_state['values']['name'];
   $form_state['redirect'] = "admin/config/people/roles/edit/{$role}";
 }
-
 
 /**
  * Implements hook_form_FORM_ID_alter() for user_admin_role_delete_confirm.
@@ -143,7 +135,6 @@ function role_help_user_admin_roles_add_submit($form, &$form_state) {
 function role_help_form_user_admin_role_delete_confirm_alter(&$form, &$form_state) {
   $form['#submit'][] = 'role_help_user_admin_role_delete_confirm_submit';
 }
-
 
 /**
  * Perform additional handling when deleting a role.
@@ -156,13 +147,12 @@ function role_help_user_admin_role_delete_confirm_submit($form, &$form_state) {
     ', array(':role' => $form_state['values']['role']));
 }
 
-
 /**
  * Implements hook_form_FORM_ID_alter() for user_admin_role.
  *
  * See form at admin/config/people/roles/edit/%user_role.
- * Adds text areas for the role's summary and help text and replace the submit
- * handler.
+ * Adds text areas for the role's help text and replace the submit handler when
+ * adding or editing a role.
  */
 function role_help_form_user_admin_role_alter(&$form, &$form_state) {
   if (isset($form['name']['#default_value'])) {
@@ -175,141 +165,67 @@ function role_help_form_user_admin_role_alter(&$form, &$form_state) {
   }
   $form['role_help'] = array(
     '#tree' => TRUE,
-    '#weight' => -5,
-  );
-  // Store a hidden value so we know whether to update or insert.
-  $form['role_help']['exists'] = array(
-    '#type' => 'value',
-    '#value' => !empty($role_help),
-  );
-  $form['role_help']['summary'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Summary'),
-    '#size' => 80,
-    '#maxlength' => 255,
-    '#default_value' => isset($role_help->summary) ? $role_help->summary : '',
-    '#description' => t('Summary of what permissions are assigned to this role, and how the role is used.  This will be shown on the admin role settings page and on user profile edit pages.'),
   );
 
   $format_names = _role_help_format_names();
   $format_name = $format_names[config_get('role_help.settings', 'role_help_format')];
+  $extra = module_exists('role_delegation') ? '' : ' ' . t('and to users on the Roles tab in their profile');
   $form['role_help']['help'] = array(
     '#type' => 'textarea',
-    '#title' => t('Help text'),
+    '#title' => t('Detailed help text'),
     '#default_value' => isset($role_help->help) ? $role_help->help : '',
-    '#description' => t('A more detailed description of what a user with this role can accomplish. This will be shown to users on the admin roles listing and, if non-empty, to users on the Roles tab in their profile. The "@format" format (!link) will be applied.',
+    '#description' => t('A more detailed description of what a user with this role can accomplish. This, if non-empty, will be shown to users on the <a href="!help_url">admin roles listing</a>!extra. The "@format" format (<a href="!change_url">change this</a>) will be applied.',
       array(
+        '!extra' => $extra,
         '@format' => $format_name,
-        '!link' => l(t('change this'), 'admin/config/people/roles'),
+        '!help_url' => url('admin/people/role-help'),
+        '!change_url' => url('admin/config/people/roles'),
       )),
   );
-  $form['name']['#weight'] = -10;
   $form['#submit'] = array('role_help_user_admin_role_submit');
 }
-
 
 /**
  * Replacement submission handler for the role edit form.
  *
- * Save the summary and help text for the role and then return to the roles listing.
+ * Perform the original handling, but also save the detailed help text into our
+ * table.
  *
  * @See user_admin_role_submit()
  */
 function role_help_user_admin_role_submit($form, &$form_state) {
-  // Perform the original handling from user_admin_role_submit().
-  $role = $form_state['role'];
-  $old_role = $role->label;
-  $role->label = $form_state['values']['label'];
-  user_role_save($role);
-  $new_role = $role->label;
-  if ($old_role != $new_role) {
-    backdrop_set_message(t('The %old_role role has been renamed to %new_role.', array('%old_role' => $old_role, '%new_role' => $new_role)));
-  }
 
-  // Handle our additional fields.
-  $role_help = array(
-    'role' => $form_state['values']['name'],
-    'help' => $form_state['values']['role_help']['help'],
-    'summary' => $form_state['values']['role_help']['summary'],
-  );
-  $exists = db_query('
-    SELECT COUNT(1)
-    FROM {role_help}
-    WHERE role = :role
-    ', array(':role' => $role_help['role']))
-    ->fetchField();
-  if ($exists) {
-    backdrop_write_record('role_help', $role_help, 'role');
+  // Perform the original handling from user_admin_role_submit(), which will
+  // save the role information (including descriptions) and set up the redirect.
+  user_admin_role_submit($form, $form_state);
+
+  // Get the affected role (new or modified).
+  if (empty($form_state['role'])) {
+    // We created (and saved) a new role.
+    $name = $form_state['values']['name'];
+    $role = user_role_load($name);
+    $new = TRUE;
   }
   else {
+    // We updated an existing role.
+    $role = $form_state['role'];
+    $new = FALSE;
+  }
+
+  // We'll keep the role_help table structure the same, but now we'll use the
+  // core role description field for the summary column (which replaced it).
+  $role_help = array(
+    'role' => $role->name,
+    'help' => $form_state['values']['role_help']['help'],
+    'summary' => $role->description,
+  );
+  if ($new) {
     backdrop_write_record('role_help', $role_help);
   }
-    backdrop_set_message(t('The summary and help text have been saved.'));
-  $form_state['redirect'] = 'admin/config/people/roles';
-}
-
-
-/**
- * Implements hook_form_FORM_ID_alter() for user_profile_form.
- *
- * See form at user/%user/edit.
- * Add role summaries to the user account edit form role checkboxes.
- */
-function role_help_form_user_profile_form_alter(&$form, &$form_state) {
-  $form['account_settings']['roles']['#after_build'][] =
-    'role_help_role_checkboxes_after_build';
-}
-
-
-/**
- * Implements hook_form_FORM_ID_alter() for user_register.
- *
- * See form at admin/people/create.
- * Add role summaries to the user register form role checkboxes.
- */
-function role_help_form_user_register_form_alter(&$form, &$form_state) {
-  // The form is used both for admins and new user registration; in the
-  // latter case the roles element is not present.
-  if (isset($form['account_settings']['roles'])) {
-    $form['account_settings']['roles']['#after_build'][] = 'role_help_role_checkboxes_after_build';
+  else {
+    backdrop_write_record('role_help', $role_help, 'role');
   }
 }
-
-
-/**
- * Implements hook_form_FORM_ID_alter() for role_delegation_roles_form.
- *
- * Provides support for the Role Delegation module, if installed.
- * See form at user/%user/roles if role_delegation is installed.
- * Add role summaries to role_delegation module's role checkboxes.
- */
-function role_help_form_role_delegation_roles_form_alter(&$form, &$form_state) {
-  $form['account']['roles_change']['#after_build'][] =
-    'role_help_role_checkboxes_after_build';
-}
-
-
-/**
- * Form #after_build processor to add summary descriptions to checkboxes.
- *
- * Add to a 'checkboxes' element; or any element all of whose children are
- * individual 'checkbox' elements keyed by role.
- */
-function role_help_role_checkboxes_after_build($element, &$form_state) {
-  $summaries = db_query("
-    SELECT role, summary
-    FROM {role_help}
-    ")
-    ->fetchAllKeyed();
-  // Add role summary to form checkboxes.
-  foreach (element_children($element) as $role) {
-    if (isset($summaries[$role])) {
-      $element[$role]['#description'] = check_plain($summaries[$role]);
-    }
-  }
-  return $element;
-}
-
 
 /**
  * Return a formatted list of roles with their help text.
@@ -338,7 +254,6 @@ function _role_help_role_list_output($header, $roles_info) {
   );
 }
 
-
 /**
  * Implements hook_theme().
  */
@@ -354,19 +269,9 @@ function role_help_theme() {
   );
 }
 
-
 /**
- * Implements hook_theme_registry_alter().
- *
- * Override to provide our extras to the role list admin page.
- */
-function role_help_theme_registry_alter(&$theme_registry) {
-  $theme_registry['user_admin_roles']['function'] = 'role_help_user_admin_roles';
-}
-
-
-/**
- * Theme a role_help_section.
+ * Theme a role_help_section, used on the admin/people/role-help and
+ * user/N/roles pages.
  *
  * @ingroup themeable
  */
@@ -377,60 +282,6 @@ function theme_role_help_section($variables) {
     check_markup($variables['description'], $format, FALSE) . '</div>';
   return $output;
 }
-
-
-/**
- * Theme the role form.
- *
- * Override of theme_user_admin_roles() to add the summary text.
- *
- * @ingroup themeable
- */
-function role_help_user_admin_roles($variables) {
-  $form = $variables['form'];
-  $header = array(t('Name'), t('Weight'), t('Operations'));
-  foreach (element_children($form['roles']) as $role_name) {
-    $label = $form['roles'][$role_name]['#role']->label;
-    $row = array();
-    if (in_array($role_name, array(BACKDROP_ANONYMOUS_ROLE, BACKDROP_AUTHENTICATED_ROLE))) {
-      $formatted_label = t('@name <em>(required)</em>', array('@name' => $label));
-    }
-    else {
-      $formatted_label = check_plain($label);
-    }
-    $summary = db_query("
-      SELECT summary
-      FROM {role_help}
-      WHERE role = :role
-      ", array(':role' => $role_name))
-      ->fetchField();
-    if (!empty($summary)) {
-      $formatted_label .= '<br><div class="description">' . check_plain($summary) . '</div>';
-    }
-    $row[] = $formatted_label;
-    $row[] = backdrop_render($form['roles'][$role_name]['weight']);
-    $row[] = backdrop_render($form['roles'][$role_name]['operations']);
-    $rows[] = array('data' => $row, 'class' => array('draggable'));
-  }
-  $row = array();
-  $row[] = array(
-    'data' => backdrop_render($form['label']) . backdrop_render($form['name']),
-    'class' => 'edit-name');
-  $row[] = '';
-  $row[] = backdrop_render($form['add']);
-  $rows[] = $row;
-
-  backdrop_add_tabledrag('user-roles', 'order', 'sibling', 'role-weight');
-
-  $output = theme('table', array(
-    'header' => $header,
-    'rows' => $rows,
-    'attributes' => array('id' => 'user-roles')));
-  $output .= backdrop_render_children($form);
-
-  return $output;
-}
-
 
 /**
  * Return the enabled text filter formats.
