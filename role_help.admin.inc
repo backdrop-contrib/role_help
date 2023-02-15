@@ -5,12 +5,12 @@
  */
 
 /**
- * Return the admin listing of all roles and detailed help text.
+ * Return the admin listing of all roles with detailed help text.
  *
  * Used on admin/people/role-help page.
  */
 function role_help_admin_page() {
-  $header = t('All roles with help text are listed below.');
+  $header = t('All roles with detailed help text are listed below.');
   $roles_info = db_query("
     SELECT role, help
     FROM {role_help}
